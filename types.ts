@@ -39,7 +39,9 @@ type Schema = {
 type Element = {
   name: string,
   type: string,
-  'xs:annotation': Annotation[]
+  minOccurs?: string,
+  maxOccurs?: string,
+  'xs:annotation'?: Annotation[]
   // can have other internal contents but unsupported for now
 }
 
@@ -53,18 +55,19 @@ export type SimpleType = {
   'xs:restriction': Restriction[],
 }
 
-type ComplexType = {
+export type ComplexType = {
   name: string;
   'xs:annotation'?: Annotation[];
   'xs:sequence': Sequence[]
+  'xs:attribute': Attribute[]
 }
 
 type Sequence = OneOf<{
-  'xs:element': Element;
-  'xs:group': string;
-  'xs:choice': string;
-  'xs:sequence': string;
-  'xs:any': string;
+  'xs:element': Element[];
+  'xs:group': unknown;
+  'xs:choice': unknown;
+  'xs:sequence': unknown;
+  'xs:any': unknown;
 }>
 
 
@@ -84,6 +87,7 @@ export type Restriction = {
 type Attribute = {
   name: string;
   type: BuiltInType | string;
+  default?: string;
   use: "required" | "optional";
 }
 

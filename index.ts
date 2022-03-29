@@ -1,6 +1,6 @@
 import ts from "typescript";
 
-import {Annotation, BuiltInType, Restriction, SimpleType} from './types'
+import {Annotation, BuiltInType, ComplexType, Restriction, SimpleType} from './types'
 
 const file = ts.createSourceFile("source.ts", "", ts.ScriptTarget.ESNext, false, ts.ScriptKind.TS);
 const printer = ts.createPrinter({ newLine: ts.NewLineKind.LineFeed });
@@ -8,9 +8,10 @@ const printer = ts.createPrinter({ newLine: ts.NewLineKind.LineFeed });
 
 const stringTypeRef = ts.factory.createTypeReferenceNode("string");
 const numberTypeRef = ts.factory.createTypeReferenceNode("number");
+const questionToken = ts.factory.createToken(ts.SyntaxKind.QuestionToken);
 
 // eventually  we will need to store all type refs in scope I guess
-const getTypeRefForBaseType = (type: BuiltInType | string) => {
+const getTypeRefForBaseType = (type: BuiltInType | string): ts.TypeReferenceNode => {
   switch (type) {
     case "xs:":
     case 'xs:string':
@@ -28,11 +29,11 @@ const getTypeRefForBaseType = (type: BuiltInType | string) => {
       return ts.factory.createTypeReferenceNode("number");
 
     default:
-      throw new Error(`Unrecognized base type ${type}`)
+      return ts.factory.createTypeReferenceNode(type);
   }
 }
 
-const getTypeForRestriction = (restriction: Restriction, name: string) => {
+const getTypeForRestriction = (restriction: Restriction, name: string): ts.TypeAliasDeclaration => {
   if (restriction['xs:enumeration']) {
     // TODO: check xs:base to determine what type of literal to create
     const unionTypeNodeFn = ts.factory.createStringLiteral;
@@ -82,6 +83,7 @@ export const generateSimpleType = (simpleTypeDef: SimpleType) => {
   if (docComment) console.log(docComment);
 
   // RESTRICTION
+  // TODO: types without a restriction, if they exist?
   // if (simpleTypeDef['xs:restriction'])
   const [restriction] = simpleTypeDef['xs:restriction'];
   const decl = getTypeForRestriction(restriction, simpleTypeDef.name);
@@ -91,4 +93,56 @@ export const generateSimpleType = (simpleTypeDef: SimpleType) => {
   console.log('')
 
   //
+}
+
+
+export const generateComplexType = (complexTypeDef: ComplexType) => {
+  const propertySignatures = [];
+
+  // parse sequences
+  if (complexTypeDef["xs:sequence"]) {
+    const [sequence] = complexTypeDef["xs:sequence"];
+    // TODO: other types of sequences
+    // element sequence
+    if (sequence["xs:element"]) {
+      const signatures = sequence["xs:element"].map(el => {
+        return ts.factory.createPropertySignature(
+          undefined,
+          el.name,
+          el.minOccurs === '0' ? questionToken : undefined,
+          ts.factory.createArrayTypeNode(getTypeRefForBaseType(el.type))
+        )
+      })
+      propertySignatures.push(...signatures)
+    } else {
+      throw new Error(`Unimplemented complexType with keys ${Object.keys(complexTypeDef)}`)
+    }
+  }
+
+  // attributes are simple typed
+  if (complexTypeDef["xs:attribute"]) {
+    const signatures = complexTypeDef["xs:attribute"].map(attribute => {
+      return ts.factory.createPropertySignature(
+        undefined,
+        attribute.name,
+        attribute.use === 'optional' ? questionToken : undefined,
+        getTypeRefForBaseType(attribute.type)
+      )
+    })
+    propertySignatures.push(...signatures);
+  }
+
+
+  const interfaceDecl = ts.factory.createInterfaceDeclaration(
+    undefined,
+    undefined,
+    complexTypeDef.name,
+    undefined,
+    undefined,
+    propertySignatures
+  );
+  const result = printer.printNode(ts.EmitHint.Unspecified, interfaceDecl, file);
+  console.log(result);
+
+  // if (complexTypeDef)
 }
