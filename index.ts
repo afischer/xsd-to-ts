@@ -99,6 +99,8 @@ export const generateSimpleType = (simpleTypeDef: SimpleType) => {
 export const generateComplexType = (complexTypeDef: ComplexType) => {
   const propertySignatures = [];
 
+  // TODO: parse CHOICE
+
   // parse sequences
   if (complexTypeDef["xs:sequence"]) {
     const [sequence] = complexTypeDef["xs:sequence"];
@@ -143,6 +145,5 @@ export const generateComplexType = (complexTypeDef: ComplexType) => {
   );
   const result = printer.printNode(ts.EmitHint.Unspecified, interfaceDecl, file);
   console.log(result);
-
-  // if (complexTypeDef)
+  console.log();
 }

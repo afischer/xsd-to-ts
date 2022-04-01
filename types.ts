@@ -26,7 +26,7 @@ export type BuiltInType = 'xs:string'
   | 'xs:time'
 
 
-type Schema = {
+export type Schema = {
   'xmlns:xs': string;
   elementFormDefault: FormDefaultOption;
   attributeFormDefault: FormDefaultOption;
@@ -58,8 +58,9 @@ export type SimpleType = {
 export type ComplexType = {
   name: string;
   'xs:annotation'?: Annotation[];
-  'xs:sequence': Sequence[]
-  'xs:attribute': Attribute[]
+  'xs:sequence'?: Sequence[];
+  'xs:attribute'?: Attribute[];
+  'xs:choice'?: Choice[];
 }
 
 type Sequence = OneOf<{
@@ -70,6 +71,13 @@ type Sequence = OneOf<{
   'xs:any': unknown;
 }>
 
+type Choice = {
+  'xs:element'?: Element[];
+  'xs:group'?: unknown;
+  'xs:choice'?: Choice[];
+  'xs:sequence'?: Sequence[];
+  'xs:any'?: unknown;
+}
 
 export type Annotation = {
   'xs:documentation': string[];
